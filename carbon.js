@@ -1,3 +1,7 @@
+/* 
+Calcualte the carbon emission based on the distance travel
+return grams per passenger kilometer
+ */
 export function carbonCal(transportation, distance) {
     if(transportation == "plane") {
         //Grams per passenger kilometer * kilometers travel

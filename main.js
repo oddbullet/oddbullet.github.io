@@ -9,7 +9,7 @@ const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
 }).addTo(map);
 
-var info = L.control();
+let info = L.control();
 
 info.onAdd = function (map) {
   this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
@@ -27,16 +27,16 @@ info.update = function (props) {
 info.addTo(map);
 
 // get color depending on population density value
-  function getColor(d) {
-      return d >= 8 ? '#800026' :
-          d >= 7  ? '#bd0026' :
-    d >= 6  ? '#e31a1c' :
-          d >= 5  ? '#fc4e2a' :
-          d >= 4  ? '#fd8d3c' :
-          d >= 3   ? '#feb24c' :
-          d >= 2   ? '#fed976' :
-          d >= 1   ? '#ffeda0' : '#ffffcc';
-  }
+function getColor(d) {
+    return d >= 8 ? '#800026' :
+        d >= 7  ? '#bd0026' :
+        d >= 6  ? '#e31a1c' :
+        d >= 5  ? '#fc4e2a' :
+        d >= 4  ? '#fd8d3c' :
+        d >= 3   ? '#feb24c' :
+        d >= 2   ? '#fed976' :
+        d >= 1   ? '#ffeda0' : '#ffffcc';
+}
 
 function style(feature) {
       return {
@@ -49,14 +49,14 @@ function style(feature) {
       };
   }      
 
-var geojson;
+let geojson;
 
 function highlightFeature(e) {
-  var layer = e.target;
+  let layer = e.target;
 
   layer.setStyle({
-    weight: 5,
-    color: '#666',
+    weight: 2,
+    color: 'white',
     dashArray: '',
     fillOpacity: 0.7
   });
@@ -76,11 +76,25 @@ function zoomToFeature(e) {
   map.fitBounds(e.target.getBounds());
 }
 
+function handleClick(e) {
+  let layer = e.target;
+  layer.setStyle({
+    weight: 2,
+    color: 'white',
+    ddashArray: '',
+    fillOpacity: 0.7,
+    fillColor: getColor(layer.feature.properties.density+=1)
+  })
+   layer.bringToFront;
+   info.update(layer.feature.properties);
+   onclick;
+}
+
 function onEachFeature(feature, layer) {
   layer.on({
     mouseover: highlightFeature,
-    mouseout: resetHighlight,
-    //click: zoomToFeature
+    //mouseout: resetHighlight,
+    click: handleClick
   });
 }
 
@@ -92,16 +106,16 @@ geojson = L.geoJson(statesData, {
 // show the scale bar on the lower left corner
 L.control.scale({imperial: true, metric: true}).addTo(map);
 
-var legend = L.control({position: 'bottomright'});
+let legend = L.control({position: 'bottomright'});
 
 legend.onAdd = function (map) {
 
-  var div = L.DomUtil.create('div', 'info legend'),
+  let div = L.DomUtil.create('div', 'info legend'),
     grades = [0, 1, 2, 3, 4, 5, 6, 7, 8],
     labels = [];
 
   // loop through our density intervals and generate a label with a colored square for each interval
-  for (var i = 0; i < grades.length; i++) {
+  for (let i = 0; i < grades.length; i++) {
     div.innerHTML +=
       '<i style="background:' + getColor(grades[i]) + '"></i> ' +
       grades[i] + (grades[i + 1] ? '<br>' : '+');
@@ -112,14 +126,14 @@ legend.onAdd = function (map) {
 
 legend.addTo(map);
 
-var popup = L.popup();
+let popup = L.popup();
 
 function onMapClick(e) {
   popup
     .setLatLng(e.latlng)
     .setContent("toggle")
     .openOn(map);
-    L.mmarker(e.latlng).addTo(Map);
+    L.marker(e.latlng).addTo(map);
 }
 
 map.on('click', onMapClick);
