@@ -17,11 +17,23 @@ info.onAdd = function (map) {
   return this._div;
 };
 
+let distance = 0;
+let CO2 = 0.0;
+
 // method that we will use to update the control based on feature properties passed
 info.update = function (props) {
   this._div.innerHTML = '<h4>US Travel Info</h4>' +  (props ?
   '<b>' + props.name + '</b><br />' + (props.density > 0 ? props.density + ' Trip(s) to this state' : 'No trips')
-  : 'Hover over a state');
+  : 'Hover over a state') + 
+  '<br/>'+
+  '<p>Distance: ' + (distance / 1000).toFixed(2) + ' KM</p>'+
+  '<br/>'+
+  '<p>CO2: ' + (CO2).toFixed(2) + ' kg/passenger-km</p>'+
+  '<p>Keyboard shortcuts:</p>'+
+  '<P>Shift+R: Remove all markers & lines</p>'+
+  '<P>Shift+Z: Undo</p>'+
+  '<p>Shift+T: Change transportation method</p>'+
+  '<p>Blue: Car Red: Airplane</p>'
 };
 
 info.addTo(map);
@@ -87,13 +99,12 @@ function handleClick(e) {
   })
    layer.bringToFront;
    info.update(layer.feature.properties);
-   onclick;
 }
 
 function onEachFeature(feature, layer) {
   layer.on({
     mouseover: highlightFeature,
-    //mouseout: resetHighlight,
+    mouseout: resetHighlight,
     click: handleClick
   });
 }
@@ -128,12 +139,97 @@ legend.addTo(map);
 
 let popup = L.popup();
 
+let markerList = [];
+let lastMarker = null;
+let lineList = [];
+let transportation = "Airplane";
+
 function onMapClick(e) {
-  popup
-    .setLatLng(e.latlng)
-    .setContent("toggle")
-    .openOn(map);
-    L.marker(e.latlng).addTo(map);
+    let marker = L.marker(e.latlng).addTo(map);
+    markerList.push(marker);
+
+    // Draw the line
+    if (lastMarker) {
+      // Create a polyline connecting the lastMarker and the new marker
+      let latlngs = [lastMarker.getLatLng(), marker.getLatLng()];
+      let polyLine;
+      if (transportation == "Airplane") {
+        polyLine = L.polyline(latlngs, { color: 'red' }).addTo(map);
+      }
+      if (transportation == "Car") {
+        polyLine = L.polyline(latlngs, { color: 'blue'}).addTo(map);
+      }
+      lineList.push(polyLine);
+
+      let newDist = lastMarker.getLatLng().distanceTo(marker.getLatLng());
+      distance += newDist;
+      CO2 += carbonCal(transportation, newDist);
+
+    }
+    
+    lastMarker = marker;
+    
+    
+    info.update();
 }
 
 map.on('click', onMapClick);
+
+function removeLastMarker() {
+  if(markerList.length > 1){
+    let newDist = markerList[markerList.length-1].getLatLng().distanceTo(markerList[markerList.length-2].getLatLng());
+    distance -= newDist;
+    let recentMarker = markerList.pop();
+    let lastLine = lineList.pop();
+    CO2 -= carbonCal(transportation, newDist);
+    map.removeLayer(recentMarker);
+    map.removeLayer(lastLine);
+
+  } else {
+    map.removeLayer(markerList.pop());
+    lastMarker = null;
+    C02 = 0;
+    distance = 0;
+  }
+  if (distance == 0) {
+    C02 = 0;
+  }
+  info.update();
+}
+
+/* Remove mark function */
+function removeAllMarker() {
+  for (let i = 0; i < markerList.length; i++) {
+    map.removeLayer(markerList[i]);
+  }
+  markerList = [];
+  lastMarker = null;
+}
+
+function removeAllLines() {
+  for (let i = 0; i < lineList.length; i++) {
+    map.removeLayer(lineList[i]);
+  }
+  lineList = [];
+}
+
+function toggleTransportation() {
+  if (transportation == "Airplane"){
+    transportation = "Car";
+  }
+  else {
+    transportation = "Airplane";
+  }
+}
+
+document.addEventListener("keydown", function(event) {
+  if (event.key === "R") {
+    removeAllMarker();
+    removeAllLines();
+  } else if (event.key === "Z") {
+    removeLastMarker();
+    lastMarker = markerList[markerList.length - 1];
+  } else if (event.key === "T" && markerList.length == 0) {
+    toggleTransportation();
+  }
+});
